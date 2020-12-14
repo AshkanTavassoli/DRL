@@ -27,7 +27,8 @@ class StockEnvTrade(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, df,day = 0,turbulence_threshold=140
-                 ,initial=True, previous_state=[], model_name='', iteration=''):
+                 ,initial=True, previous_state=[], model_name='', iteration='',
+                 part_i=0):
         #super(StockEnv, self).__init__()
         #money = 10 , scope = 1
         self.day = day
@@ -63,6 +64,7 @@ class StockEnvTrade(gym.Env):
         self._seed()
         self.model_name=model_name        
         self.iteration=iteration
+        self.part_i=part_i
 
 
     def _sell_stock(self, index, action):
@@ -119,12 +121,15 @@ class StockEnvTrade(gym.Env):
 
         if self.terminal:
             plt.plot(self.asset_memory,'r')
-            plt.savefig('results/account_value_trade_{}_{}.png'.format(self.model_name, self.iteration))
+            plt.savefig('results/account_value_trade_{}_{}_{}.png'.format(self.model_name,
+            self.iteration, self.part_i))
             plt.close()
             df_total_value = pd.DataFrame(self.asset_memory)
-            df_total_value.to_csv('results/account_value_trade_{}_{}.csv'.format(self.model_name, self.iteration))
+            df_total_value.to_csv('results/account_value_trade_{}_{}_{}.csv'.format(self.model_name,
+            self.iteration, self.part_i))
             end_total_asset = self.state[0]+ \
             sum(np.array(self.state[1:(STOCK_DIM+1)])*np.array(self.state[(STOCK_DIM+1):(STOCK_DIM*2+1)]))
+            print("for part {}:".format(self.part_i))
             print("previous_total_asset:{}".format(self.asset_memory[0]))           
 
             print("end_total_asset:{}".format(end_total_asset))
@@ -139,7 +144,8 @@ class StockEnvTrade(gym.Env):
             print("Sharpe: ",sharpe)
             
             df_rewards = pd.DataFrame(self.rewards_memory)
-            df_rewards.to_csv('results/account_rewards_trade_{}_{}.csv'.format(self.model_name, self.iteration))
+            df_rewards.to_csv('results/account_rewards_trade_{}_{}_{}.csv'.format(self.model_name,
+            self.iteration, self.part_i))
             
             # print('total asset: {}'.format(self.state[0]+ sum(np.array(self.state[1:29])*np.array(self.state[29:]))))
             #with open('obs.pkl', 'wb') as f:  

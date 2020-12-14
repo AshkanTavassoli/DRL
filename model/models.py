@@ -1,6 +1,7 @@
 # common library
 import pandas as pd
 import numpy as np
+import random
 import time
 import gym
 
@@ -98,11 +99,18 @@ def train_GAIL(env_train, model_name, timesteps=1000):
     print('Training time (PPO): ', (end - start) / 60, ' minutes')
     return model
 
+def get_random_model(sharpe_a2c, sharpe_ppo, sharpe_ddpg):
+    if (sharpe_a2c < sharpe_ppo) and (sharpe_a2c < sharpe_ddpg):
+        return random.choice(('ppo', 'ddpg'))
+    if (sharpe_ppo < sharpe_a2c) and (sharpe_ppo < sharpe_ddpg):
+        return random.choice(('a2c', 'ddpg'))
+    return random.choice(('a2c', 'ppo'))
 
 def DRL_prediction(df,
                    model,
                    name,
                    last_state,
+                   part_i,
                    iter_num,
                    unique_trade_date,
                    rebalance_window,
@@ -117,7 +125,8 @@ def DRL_prediction(df,
                                                    initial=initial,
                                                    previous_state=last_state,
                                                    model_name=name,
-                                                   iteration=iter_num)])
+                                                   iteration=iter_num,
+                                                   part_i=part_i)])
     obs_trade = env_trade.reset()
 
     for i in range(len(trade_data.index.unique())):
@@ -154,7 +163,8 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
     print("============Start Ensemble Strategy============")
     # for ensemble model, it's necessary to feed the last state
     # of the previous model to the current model as the initial state
-    last_state_ensemble = []
+    num_of_parts = 10
+    last_state_ensemble = [list() for i in range(10)]
 
     ppo_sharpe_list = []
     ddpg_sharpe_list = []
@@ -252,28 +262,31 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         ddpg_sharpe_list.append(sharpe_ddpg)
 
         # Model Selection based on sharpe ratio
-        if (sharpe_ppo >= sharpe_a2c) & (sharpe_ppo >= sharpe_ddpg):
-            model_ensemble = model_ppo
-            model_use.append('PPO')
-        elif (sharpe_a2c > sharpe_ppo) & (sharpe_a2c > sharpe_ddpg):
-            model_ensemble = model_a2c
-            model_use.append('A2C')
-        else:
-            model_ensemble = model_ddpg
-            model_use.append('DDPG')
         ############## Training and Validation ends ##############
 
         ############## Trading starts ##############
         print("======Trading from: ", unique_trade_date[i - rebalance_window], "to ", unique_trade_date[i])
-        #print("Used Model: ", model_ensemble)
-        last_state_ensemble = DRL_prediction(df=df, model=model_ensemble, name="ensemble",
-                                             last_state=last_state_ensemble, iter_num=i,
-                                             unique_trade_date=unique_trade_date,
-                                             rebalance_window=rebalance_window,
-                                             turbulence_threshold=turbulence_threshold,
-                                             initial=initial)
+        for part_i in range(10):
+            print("Part {}:".format(part_i))
+#            model_ensemble_str = get_random_model(sharpe_a2c, sharpe_ppo, sharpe_ddpg)
+            print("Used Model: ppo")
+#            if model_ensemble_str == 'a2c':
+#                model_ensemble = model_a2c
+#            elif model_ensemble_str == 'ppo':
+#                model_ensemble = model_ppo
+#            else:
+#                model_ensemble = model_ddpg
+            last_state_ensemble[part_i] = DRL_prediction(df=df, model=model_ppo, name="ensemble",
+                                                 last_state=last_state_ensemble[part_i],
+                                                 part_i=part_i,
+                                                 iter_num=i,
+                                                 unique_trade_date=unique_trade_date,
+                                                 rebalance_window=rebalance_window,
+                                                 turbulence_threshold=turbulence_threshold,
+                                                 initial=initial)
         # print("============Trading Done============")
         ############## Trading ends ##############
 
     end = time.time()
     print("Ensemble Strategy took: ", (end - start) / 60, " minutes")
+
