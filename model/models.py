@@ -1,7 +1,6 @@
 # common library
 import pandas as pd
 import numpy as np
-import random
 import time
 import gym
 
@@ -275,4 +274,3 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
 
     end = time.time()
     print("Ensemble Strategy took: ", (end - start) / 60, " minutes")
-
