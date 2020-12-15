@@ -99,13 +99,6 @@ def train_GAIL(env_train, model_name, timesteps=1000):
     print('Training time (PPO): ', (end - start) / 60, ' minutes')
     return model
 
-def get_random_model(sharpe_a2c, sharpe_ppo, sharpe_ddpg):
-    if (sharpe_a2c < sharpe_ppo) and (sharpe_a2c < sharpe_ddpg):
-        return random.choice(('ppo', 'ddpg'))
-    if (sharpe_ppo < sharpe_a2c) and (sharpe_ppo < sharpe_ddpg):
-        return random.choice(('a2c', 'ddpg'))
-    return random.choice(('a2c', 'ppo'))
-
 def DRL_prediction(df,
                    model,
                    name,
@@ -233,13 +226,13 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
               unique_trade_date[i - rebalance_window - validation_window])
         # print("training: ",len(data_split(df, start=20090000, end=test.datadate.unique()[i-rebalance_window]) ))
         # print("==============Model Training===========")
-        print("======A2C Training========")
-        model_a2c = train_A2C(env_train, model_name="A2C_30k_dow_{}".format(i), timesteps=30000)
-        print("======A2C Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
-              unique_trade_date[i - rebalance_window])
-        DRL_validation(model=model_a2c, test_data=validation, test_env=env_val, test_obs=obs_val)
-        sharpe_a2c = get_validation_sharpe(i)
-        print("A2C Sharpe Ratio: ", sharpe_a2c)
+#        print("======A2C Training========")
+#        model_a2c = train_A2C(env_train, model_name="A2C_30k_dow_{}".format(i), timesteps=30000)
+#        print("======A2C Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
+#              unique_trade_date[i - rebalance_window])
+#        DRL_validation(model=model_a2c, test_data=validation, test_env=env_val, test_obs=obs_val)
+#        sharpe_a2c = get_validation_sharpe(i)
+#        print("A2C Sharpe Ratio: ", sharpe_a2c)
 
         print("======PPO Training========")
         model_ppo = train_PPO(env_train, model_name="PPO_100k_dow_{}".format(i), timesteps=100000)
@@ -249,17 +242,17 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         sharpe_ppo = get_validation_sharpe(i)
         print("PPO Sharpe Ratio: ", sharpe_ppo)
 
-        print("======DDPG Training========")
-        model_ddpg = train_DDPG(env_train, model_name="DDPG_10k_dow_{}".format(i), timesteps=10000)
-        #model_ddpg = train_TD3(env_train, model_name="DDPG_10k_dow_{}".format(i), timesteps=20000)
-        print("======DDPG Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
-              unique_trade_date[i - rebalance_window])
-        DRL_validation(model=model_ddpg, test_data=validation, test_env=env_val, test_obs=obs_val)
-        sharpe_ddpg = get_validation_sharpe(i)
-
-        ppo_sharpe_list.append(sharpe_ppo)
-        a2c_sharpe_list.append(sharpe_a2c)
-        ddpg_sharpe_list.append(sharpe_ddpg)
+#        print("======DDPG Training========")
+#        model_ddpg = train_DDPG(env_train, model_name="DDPG_10k_dow_{}".format(i), timesteps=10000)
+#        #model_ddpg = train_TD3(env_train, model_name="DDPG_10k_dow_{}".format(i), timesteps=20000)
+#        print("======DDPG Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
+#              unique_trade_date[i - rebalance_window])
+#        DRL_validation(model=model_ddpg, test_data=validation, test_env=env_val, test_obs=obs_val)
+#        sharpe_ddpg = get_validation_sharpe(i)
+#
+#        ppo_sharpe_list.append(sharpe_ppo)
+#        a2c_sharpe_list.append(sharpe_a2c)
+#        ddpg_sharpe_list.append(sharpe_ddpg)
 
         # Model Selection based on sharpe ratio
         ############## Training and Validation ends ##############
@@ -268,14 +261,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         print("======Trading from: ", unique_trade_date[i - rebalance_window], "to ", unique_trade_date[i])
         for part_i in range(10):
             print("Part {}:".format(part_i))
-#            model_ensemble_str = get_random_model(sharpe_a2c, sharpe_ppo, sharpe_ddpg)
             print("Used Model: ppo")
-#            if model_ensemble_str == 'a2c':
-#                model_ensemble = model_a2c
-#            elif model_ensemble_str == 'ppo':
-#                model_ensemble = model_ppo
-#            else:
-#                model_ensemble = model_ddpg
             last_state_ensemble[part_i] = DRL_prediction(df=df, model=model_ppo, name="ensemble",
                                                  last_state=last_state_ensemble[part_i],
                                                  part_i=part_i,

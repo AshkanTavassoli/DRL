@@ -129,7 +129,6 @@ class StockEnvTrade(gym.Env):
             self.iteration, self.part_i))
             end_total_asset = self.state[0]+ \
             sum(np.array(self.state[1:(STOCK_DIM+1)])*np.array(self.state[(STOCK_DIM+1):(STOCK_DIM*2+1)]))
-            print("for part {}:".format(self.part_i))
             print("previous_total_asset:{}".format(self.asset_memory[0]))           
 
             print("end_total_asset:{}".format(end_total_asset))
