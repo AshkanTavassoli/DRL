@@ -139,10 +139,19 @@ class StockEnvTrain(gym.Env):
                 # print('take sell action'.format(actions[index]))
                 self._sell_stock(index, actions[index])
 
+            availableRatio = 1
+            if self.state[0] > 0:
+                reqSum = 0
+                for index in buy_index:
+                    reqSum += self.state[index+1]*actions[index]* \
+                          (1+ TRANSACTION_FEE_PERCENT)
+                if reqSum > self.state[0]:
+                    availableRatio = self.state[0] / reqSum
+
             for index in buy_index:
                 # print('take buy action: {}'.format(actions[index]))
-                self._buy_stock(index, actions[index])
-
+                self._buy_stock(index, availableRatio * actions[index])
+                
             self.day += 1
             self.data = self.df.loc[self.day,:]         
             #load next state
