@@ -1,19 +1,24 @@
 # This is a modification of a code proposed in the paper below trying to achieve a better score - Our improvements:
 ## Fund allocation update
 We found that original code does not purchase stock as smart as it can be. The authors of this paper chose to start buying from the smallest request to biggest ones in each step – smallest means the smallest number of shares asked for and not the amount of money each request actually costs. The problem here is the worst-case scenario where there is not enough money left to perform the big buy requests in the end – which happens a lot based on our tests. It is not a good strategy since we expect the Agent to make a big buy request when it believes there is a great reward in return and make small buy requests when the rewards are expected to be smaller than the others (Expected Q Value), So by just buying the small buy requests in a lot of steps we are choosing the path that will lead to smaller expected reward.
+
 There is a problem with the training process as well, Sometimes the agent asks for an action and goes to a new state and trains itself using the actual outcome of that action but what happens is that only a part of the requested action has taken place and the reward that the agent is trying to train on is not from the action it requested. In actor critic methods this definitely would misguide the critic because it will be trained on a dataset that in some cases the action and reward are not actually a pair and the real action is unknown to the agent. 
-3.1.2 Implementation
+
 We decided to test two other options:
+
 ●	Doing the same in reverse, meaning buying the largest buy requests coming from the RL agent at first and go on. This idea could lead to a high reward since we are always buying the stocks that we are expected to get a great reward and buy the ones with small rewards only if we have money left. But there is a downside to this, it makes the behavior much greedier since in an extreme case it could do one stock trading strategy which means a higher profit at a much higher risk. In practice this idea did not act well and we believe it is because of its poor performance in market crashes. This approach could get a much better result as long as the market is bullish.
+
 ●	Splitting the available money between all incoming buy requests while keeping the ratio between different buy requests. This approach makes sure the agent gets what it actually asks for and keeps a balance between profit and the risk it is taking by keeping a more diverse portfolio.
 
 ## Sliding window length test
 The paper chooses to training and switch agents in the ensemble strategy every quarter but does not provide any reasoning. As we all know, stock markets can be volatile or stable for certain period, but it is hard to say that there is a cycle every 3 months. For example, bullish market may last longer and the market increase can be slow and steady. However, market crash can happened all of a sudden and usually does not last long. Therefore, using this 3 month window may be rigid in some cases as there could be too long or short. 
-*This change did not show promising improvements
+
+* This change did not show promising improvements
 ## Ensemble with 2 agents
 We overserved the best selected agent might not be the best performer in the next trading quarter. Instead, the agent with second Sharpe ratio has better performance. As we can see from Jan. 2017 to Sept. 2017, the ensemble strategy changes agents but it turns out the agent with second Sharpe ratio in the current quarter performed better in the next quarter. So the strategy switches agents between PPO and A2C. However, changing agents frequently might not be an optimal solution.  
 This is because the market condition varies and when the market momentum changes, bullish market can turn into bearish market quickly and vice versa.  Changing agents in a good time point is hard. In order to tackle this, we would like to utilize both agents with top 2 Sharpe ratios and with scaled portfolio value. It may lower the risk because the strategy is more diverse now with more agents working together.
-*This change did not show promising improvements
+
+* This change did not show promising improvements
 ## Ensemble multiple PPO models
 According to the original paper, PPO has the highest return, but also the highest risk. Here we try to lower the risk of PPO by ensembling multiple PPO models and keep the high return of PPO. 
 
