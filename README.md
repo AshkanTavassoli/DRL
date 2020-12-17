@@ -1,3 +1,4 @@
+# -- This is a modification of a code proposed in the paper below trying to achieve a better score --
 # Deep Reinforcement Learning for Automated Stock Trading: An Ensemble Strategy
 This repository refers to the codes for [ICAIF 2020 paper](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3690996)
 
