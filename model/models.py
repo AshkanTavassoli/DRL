@@ -1,6 +1,7 @@
 # common library
 import pandas as pd
 import numpy as np
+import random
 import time
 import gym
 
@@ -65,11 +66,11 @@ def train_DDPG(env_train, model_name, timesteps=10000):
     print('Training time (DDPG): ', (end-start)/60,' minutes')
     return model
 
-def train_PPO(env_train, model_name, timesteps=50000):
+def train_PPO(env_train, model_name, cliprange=0.2, timesteps=50000):
     """PPO model"""
 
     start = time.time()
-    model = PPO2('MlpPolicy', env_train, ent_coef = 0.005, nminibatches = 8)
+    model = PPO2('MlpPolicy', env_train, cliprange=cliprange, ent_coef = 0.005, nminibatches = 8)
     #model = PPO2('MlpPolicy', env_train, ent_coef = 0.005)
 
     model.learn(total_timesteps=timesteps)
@@ -233,13 +234,43 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
 #        sharpe_a2c = get_validation_sharpe(i)
 #        print("A2C Sharpe Ratio: ", sharpe_a2c)
 
-        print("======PPO Training========")
-        model_ppo = train_PPO(env_train, model_name="PPO_100k_dow_{}".format(i), timesteps=100000)
-        print("======PPO Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
+        print("======PPO 0.2 Training========")
+        model_ppo_02 = train_PPO(env_train,
+        model_name="PPO_100k_dow_{}".format(i), cliprange=0.2, timesteps=100000)
+        print("======PPO 0.2 Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
               unique_trade_date[i - rebalance_window])
-        DRL_validation(model=model_ppo, test_data=validation, test_env=env_val, test_obs=obs_val)
-        sharpe_ppo = get_validation_sharpe(i)
-        print("PPO Sharpe Ratio: ", sharpe_ppo)
+        DRL_validation(model=model_ppo_02, test_data=validation, test_env=env_val, test_obs=obs_val)
+        sharpe_ppo_02 = get_validation_sharpe(i)
+        print("PPO Sharpe Ratio: ", sharpe_ppo_02)
+
+        print("======PPO 0.1 Training========")
+        model_ppo_01 = train_PPO(env_train,
+        model_name="PPO_100k_dow_{}".format(i), cliprange=0.1, timesteps=100000)
+        print("======PPO 0.1 Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
+              unique_trade_date[i - rebalance_window])
+        DRL_validation(model=model_ppo_01, test_data=validation, test_env=env_val, test_obs=obs_val)
+        sharpe_ppo_01 = get_validation_sharpe(i)
+        print("PPO Sharpe Ratio: ", sharpe_ppo_01)
+
+        print("======PPO 0.5 Training========")
+        model_ppo_05 = train_PPO(env_train,
+        model_name="PPO_100k_dow_{}".format(i), cliprange=0.5, timesteps=100000)
+        print("======PPO 0.5 Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
+              unique_trade_date[i - rebalance_window])
+        DRL_validation(model=model_ppo_05, test_data=validation, test_env=env_val, test_obs=obs_val)
+        sharpe_ppo_05 = get_validation_sharpe(i)
+        print("PPO Sharpe Ratio: ", sharpe_ppo_05)
+
+        print("======PPO 0.01 Training========")
+        model_ppo_001 = train_PPO(env_train,
+        model_name="PPO_100k_dow_{}".format(i), cliprange=0.01, timesteps=100000)
+        print("======PPO 0.01 Validation from: ", unique_trade_date[i - rebalance_window - validation_window], "to ",
+              unique_trade_date[i - rebalance_window])
+        DRL_validation(model=model_ppo_001, test_data=validation, test_env=env_val, test_obs=obs_val)
+        sharpe_ppo_001 = get_validation_sharpe(i)
+        print("PPO Sharpe Ratio: ", sharpe_ppo_001)
+
+
 
 #        print("======DDPG Training========")
 #        model_ddpg = train_DDPG(env_train, model_name="DDPG_10k_dow_{}".format(i), timesteps=10000)
@@ -248,7 +279,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
 #              unique_trade_date[i - rebalance_window])
 #        DRL_validation(model=model_ddpg, test_data=validation, test_env=env_val, test_obs=obs_val)
 #        sharpe_ddpg = get_validation_sharpe(i)
-#
+
 #        ppo_sharpe_list.append(sharpe_ppo)
 #        a2c_sharpe_list.append(sharpe_a2c)
 #        ddpg_sharpe_list.append(sharpe_ddpg)
@@ -260,17 +291,53 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         print("======Trading from: ", unique_trade_date[i - rebalance_window], "to ", unique_trade_date[i])
         for part_i in range(10):
             print("Part {}:".format(part_i))
-            print("Used Model: ppo")
-            last_state_ensemble[part_i] = DRL_prediction(df=df, model=model_ppo, name="ensemble",
+
+            model_ensemble_str = random.choice(("model_ppo_001",
+            "model_ppo_01", "model_ppo_02", "model_ppo_05"))
+            if part_i == 0:
+                model_ensemble_str = "model_ppo_001"
+            if part_i == 1:
+                model_ensemble_str = "model_ppo_01"
+            if part_i == 2:
+                model_ensemble_str = "model_ppo_02"
+            if part_i == 3:
+                model_ensemble_str = "model_ppo_05"
+            if (part_i == 4) or (part_i == 5):
+                if sharpe_ppo_001 == max(sharpe_ppo_001, sharpe_ppo_01,
+                sharpe_ppo_02, sharpe_ppo_05):
+                    model_ensemble_str = "model_ppo_001"
+                if sharpe_ppo_01 == max(sharpe_ppo_001, sharpe_ppo_01,
+                sharpe_ppo_02, sharpe_ppo_05):
+                    model_ensemble_str = "model_ppo_01"
+                if sharpe_ppo_02 == max(sharpe_ppo_001, sharpe_ppo_01,
+                sharpe_ppo_02, sharpe_ppo_05):
+                    model_ensemble_str = "model_ppo_02"
+                if sharpe_ppo_05 == max(sharpe_ppo_001, sharpe_ppo_01,
+                sharpe_ppo_02, sharpe_ppo_05):
+                    model_ensemble_str = "model_ppo_05"
+            print("Used Model: {}".format(model_ensemble_str))
+            model_dict = {"model_ppo_001":model_ppo_001,
+            "model_ppo_01":model_ppo_01, "model_ppo_02":model_ppo_02,
+            "model_ppo_05":model_ppo_05}
+            model_ensemble = model_dict[model_ensemble_str]
+
+
+            last_state_ensemble[part_i] = DRL_prediction(df=df,
+            model=model_ensemble, name="ensemble",
                                                  last_state=last_state_ensemble[part_i],
                                                  part_i=part_i,
                                                  iter_num=i,
                                                  unique_trade_date=unique_trade_date,
                                                  rebalance_window=rebalance_window,
-                                                 turbulence_threshold=turbulence_threshold,
+#                                                 turbulence_threshold=turbulence_threshold,
                                                  initial=initial)
+            print("account_money")
+            print(last_state_ensemble[part_i][0])
+            print("state:")
+            print(last_state_ensemble[part_i][31:61])
         # print("============Trading Done============")
         ############## Trading ends ##############
 
     end = time.time()
     print("Ensemble Strategy took: ", (end - start) / 60, " minutes")
+
